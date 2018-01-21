@@ -21,6 +21,7 @@
 // attach stuff
 Servo esc;
 elapsedMillis sinceMotorAdj;
+elapsedMicros sinceFlash;
 
 //globals
 
@@ -31,7 +32,7 @@ int currentMotorSpeed = 0;
 //apply some smoothing by taking what we want speed to be and moving to it.
 int desiredMotorSpeed = 0; // pot1 value
 
-int desiredFlashRate = 0; //pot2 value
+int flashRate = 0; //pot2 value
 
 String reading;
 
@@ -58,12 +59,16 @@ void loop() {
   adjustMotorSpeed();
   }
 
-  if(colorneedstochange){do it};
-
-  
-  flash timer here
-  flash;
-  
+//see if its time to turn on then wait to turn off again
+  if(sinceFlash > flashRate){
+    leds[2] = CRGB:Green;
+    sinceFlash = 0;
+    offFlash = 0;
+    };
+  if (offFlash > flashTime){
+    leds[2] = CRGB;Red;
+    sinceFlash = 0;
+  } 
 
 }
 
@@ -90,7 +95,9 @@ void parseReading(){
     reading = Serial.read();
  
     desiredMotorSpeed = strtok(reading, ','); //pot1 first val comma sep
-    desiredFlashRate = strtok();
+    flashRate = strtok();
+    flashTime = 3000;
+    //TODO Calculate flash time from flashrate in microseconds
     
    }
 }
