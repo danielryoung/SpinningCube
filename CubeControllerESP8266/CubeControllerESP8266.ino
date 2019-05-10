@@ -252,10 +252,11 @@ void toggleMotor(){
 // This will start up the motor or shut it down smoothly
   if (motorRunning){
     Serial.println("Stopping Motor...");
-    // get the motor running.
+    // get the motor running.  
     motorRunning = false;
    }  else {
     Serial.println("Starting Motor...");
+    // stop the motor!
     motorRunning = true;
    }
 }
