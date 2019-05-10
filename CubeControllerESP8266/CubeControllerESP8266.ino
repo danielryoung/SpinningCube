@@ -98,6 +98,10 @@ const int LED_OFF = LOW;
 
 // END BUTTON DEBUG
 
+//MOTOR and SERVO Stuff
+#define SERVO_PIN D0
+#define MOTOR_START_SPEED 60
+
 // One button wired to the pin at BUTTON_PIN. Automatically uses the default
 // ButtonConfig. The alternative is to call the AceButton::init() method in
 // setup() below.
@@ -146,7 +150,8 @@ void setup() {
   esp_now_add_peer(remoteMac, ESP_NOW_ROLE_COMBO, WIFI_CHANNEL, NULL, 0);
 
   // SERVO
-  esc.attach(D0);
+  esc.attach(SERVO_PIN);
+  motorArm(MOTOR_START_SPEED);
 }
 
 void loop() {
@@ -252,11 +257,28 @@ void toggleMotor(){
 // This will start up the motor or shut it down smoothly
   if (motorRunning){
     Serial.println("Stopping Motor...");
+    // get the motor running.  
     motorRunning = false;
    }  else {
     Serial.println("Starting Motor...");
+    // stop the motor!
     motorRunning = true;
    }
+}
+void motorArm(int start_speed)
+{
+    int i;
+    for (i=0; i < start_speed; i+=5) {
+      motorSetSpeed(i);
+      //Serial.println(i);
+      delay(100);
+      // TODO get rid of delay use timer?
+    }
+}
+void motorSetSpeed(int motorSpeed)
+{
+    esc.write(motorSpeed);
+    motorSpeedMenu.currentValue = motorSpeed;     
 }
 // pass by reference. send in a menu and it will be acted upon rather than copied
 //void PassByReference(Student& who); //prototype

@@ -16,6 +16,9 @@ extern "C"
 #define DATA_PIN D7
 #define CLOCK_PIN D5
 
+#define MENU_ITEMS 3
+// Menu Items needs to match the transmitted data size, which is also menu items in the controller code.
+
 // How many leds in your strip?
 #define NUM_LEDS 24
 
@@ -25,8 +28,13 @@ CRGB cube[NUM_LEDS];
 
 // This the ESP NOW Data that will be transmitted.
 // this is length of data sent in byte array txrxData.  this can be up to 100ish bytes
+
+
+byte txrxData[MENU_ITEMS];
+
 const byte dataLength = 7;
 byte txrxData[dataLength];
+
 
 int side = 0;
 ///SETUP
