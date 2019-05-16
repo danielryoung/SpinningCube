@@ -99,7 +99,8 @@ const int LED_OFF = LOW;
 // END BUTTON DEBUG
 
 //MOTOR and SERVO Stuff
-#define SERVO_PIN D0
+// this is actually D2 on the d1 knock offs
+#define SERVO_PIN D4
 #define MOTOR_START_SPEED 60
 
 // One button wired to the pin at BUTTON_PIN. Automatically uses the default
@@ -129,7 +130,7 @@ void setup() {
                       //menuItem, init,current, min, max, ledhue
   patternColorMenu  =   {0,0,10,0,254,100};
   frameRateMenu     =   {1,0,15,0,255,50};
-  motorSpeedMenu    =   {2,245,20,0,255,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
+  motorSpeedMenu    =   {2,60,60,5,180,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
   
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
@@ -181,7 +182,7 @@ void loop() {
     
   //servoCRate = map(potCState[i],0,1023,0,179); 
   esc.write(motorSpeedMenu.currentValue);
-
+  //Serial.println(motorSpeedMenu.currentValue);
 
 }
 
