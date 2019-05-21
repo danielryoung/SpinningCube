@@ -83,11 +83,13 @@ void setup()
 //  esp now will receive bytes without doing anything in loop.
 void loop()
 {
- // ledTest();
+  ledTest();
+  // we are always mapping cube to leds
+  // but we periodically call next side at the framerate
  stripToCubeMap();
  
  //change pattern every ten sec.  for now pattern is just HUE
- EVERY_N_SECONDS(10){txrxData[PATTERN]++;}
+ //EVERY_N_SECONDS(10){txrxData[PATTERN]++;}
  //setSide();
  FastLED.show();
 
@@ -103,7 +105,7 @@ void loop()
 
 void ledTest()
 {
-  static uint8_t hue = txrxData[0];
+  static uint8_t globalHue = txrxData[0];
   // static means the value will be maintained outside the function!
   
     for (int i = (NUM_LEDS)-1; i >= 0; i--)
@@ -112,10 +114,12 @@ void ledTest()
    // leds[i] = CHSV(100, 255, 255);
    // cube[6] = CHSV(hue++,255,255);
    // fill_solid(cube,6,CHSV(txrxData[PATTERN],255,255));
+   // this just fills our cube with four increasing colors
+   // in theory this will shift around with the frame rate.
    setSide(0,txrxData[PATTERN]);
    setSide(1,txrxData[PATTERN] + 50);
-   setSide(2,txrxData[PATTERN] + 150);
-   setSide(3,txrxData[PATTERN] - 50);
+   setSide(2,txrxData[PATTERN] + 100);
+   setSide(3,txrxData[PATTERN] + 150);
    // leds[i] = cube[1];
     // Show the leds
     //FastLED.show();
