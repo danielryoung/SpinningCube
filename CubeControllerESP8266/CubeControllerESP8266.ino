@@ -24,6 +24,7 @@ Servo esc;
 
 #define WIFI_CHANNEL 1
 
+
 //MAC ADDRESS OF THE DEVICE YOU ARE SENDING TO
 //byte remoteMac[] = {0x3C, 0x71, 0xBF, 0x29, 0x52, 0x3C};
 byte remoteMac[] = {0x2C, 0x3A, 0xE8, 0x4E, 0x3C, 0xAE};
@@ -37,7 +38,7 @@ bool transmitNeededFlag = true;
 byte result;
 
 bool motorRunning = false;
- 
+#define STARTUP_SPEED 90 
 // End Transmitter and Servo
 
 // BUTTON MENU STUFF
@@ -98,6 +99,11 @@ const int LED_OFF = LOW;
 
 // END BUTTON DEBUG
 
+//MOTOR and SERVO Stuff
+// this is actually D2 on the d1 knock offs
+#define SERVO_PIN D4
+#define MOTOR_START_SPEED 60
+
 // One button wired to the pin at BUTTON_PIN. Automatically uses the default
 // ButtonConfig. The alternative is to call the AceButton::init() method in
 // setup() below.
@@ -125,7 +131,7 @@ void setup() {
                       //menuItem, init,current, min, max, ledhue
   patternColorMenu  =   {0,0,10,0,254,100};
   frameRateMenu     =   {1,0,15,0,255,50};
-  motorSpeedMenu    =   {2,245,20,0,255,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
+  motorSpeedMenu    =   {2,60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
   
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
@@ -146,7 +152,8 @@ void setup() {
   esp_now_add_peer(remoteMac, ESP_NOW_ROLE_COMBO, WIFI_CHANNEL, NULL, 0);
 
   // SERVO
-  esc.attach(D0);
+  esc.attach(SERVO_PIN);
+  motorArm(MOTOR_START_SPEED);
 }
 
 void loop() {
@@ -176,7 +183,7 @@ void loop() {
     
   //servoCRate = map(potCState[i],0,1023,0,179); 
   esc.write(motorSpeedMenu.currentValue);
-
+  //Serial.println(motorSpeedMenu.currentValue);
 
 }
 
@@ -186,13 +193,13 @@ void handleEvent(AceButton* /* button */, uint8_t eventType,
   switch (eventType) {
     case AceButton::kEventClicked:
     case AceButton::kEventReleased:
-      Serial.println("Single Click");
+      //Serial.println("Single Click");
       // click switches menu item so increment menuSelection++
       nextMenu();
       
       break;
     case AceButton::kEventDoubleClicked:
-      Serial.println("DoubleClick");
+      //Serial.println("DoubleClick");
       toggleMotor();
       // double click turns on motor and turns it off again. toggle 0 and 1
       // toggleMotor() start stop
@@ -251,12 +258,45 @@ void nextMenu(){
 void toggleMotor(){
 // This will start up the motor or shut it down smoothly
   if (motorRunning){
+    //if motor running is true, we stop...
     Serial.println("Stopping Motor...");
+    motorDisarm(motorSpeedMenu.currentValue);
+    // stop the motor! 
     motorRunning = false;
    }  else {
     Serial.println("Starting Motor...");
+    //start the motor
+    motorArm(STARTUP_SPEED);
     motorRunning = true;
    }
+}
+void motorArm(int start_speed)
+{
+    int i;
+    for (i=0; i < start_speed; i++) {
+      motorSetSpeed(i);
+      //Serial.println(i);
+      delay(100);
+      // TODO get rid of delay use timer?
+    }
+}
+
+void motorDisarm( int currSpeed)
+{
+      int i;
+    for (i=currSpeed; i > 50; i--) {
+      //increment currspeed down until its at 50
+      motorSetSpeed(i);
+      //Serial.println(i);
+      delay(100);
+      // TODO get rid of delay use timer?
+    }
+  
+}
+void motorSetSpeed(int motorSpeed)
+{
+    esc.write(motorSpeed);
+    motorSpeedMenu.currentValue = motorSpeed;     
 }
 // pass by reference. send in a menu and it will be acted upon rather than copied
 //void PassByReference(Student& who); //prototype
