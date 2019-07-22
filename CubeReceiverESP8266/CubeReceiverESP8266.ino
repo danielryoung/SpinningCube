@@ -1,5 +1,6 @@
 /// LIBS
 #include <ESP8266WiFi.h>
+#include "Ticker.h"
 extern "C"
 {
 #include <espnow.h>
@@ -8,6 +9,7 @@ extern "C"
 
 #include <FastLED.h>
 #include <SPI.h>
+
 //#include <stdint.h>
 /// GLOBALS
 
@@ -16,13 +18,14 @@ extern "C"
 #define DATA_PIN D7
 #define CLOCK_PIN D5
 
-#define MENU_ITEMS  3
+#define MENU_ITEMS  4
 // Menu Items needs to match the transmitted data size, which is also menu items in the controller code.
 
 // going to define each menu number so it has a name
 #define PATTERN     0
 #define FRAMERATE   1
 #define MOTORSPEED  2
+#define FINEFRAMERATE   3
 
 // How many leds in your strip?
 #define NUM_LEDS    24
@@ -36,19 +39,27 @@ CRGB cube[NUM_LEDS];
 
 
 byte txrxData[MENU_ITEMS];
+bool frameRateChange = 0;
+
+// initiate a tracker to only change frame rate when we get a new value
+byte oldFrame = 0;
+
+//void printMessage();
+
+//Ticker timer1(printMessage, 5000,0, MICROS_MICROS);
 
 //txrxData[0] = 1;
 //txrxData[FRAMERATE] = 60;
 //txrxData[MOTORSPEED] = 60;
-
-
+void nextSide();
+Ticker frameTimer(nextSide, 200,0, MICROS_MICROS);
 int side = 0;
 ///SETUP
 
 void setup()
 {
   // DEBUG SETUP prints MAC Address from WIFI Stack.  Only necessary to know receiver mac.
-  Serial.begin(115200);
+  //Serial.begin(115200);
  // Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
   //WiFi.mode(WIFI_STA);
   //WiFi.begin();
@@ -60,6 +71,7 @@ void setup()
   txrxData[PATTERN] = 1;
   txrxData[FRAMERATE] = 60;
   txrxData[MOTORSPEED] = 60;
+  txrxData[FINEFRAMERATE] = 100;
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
@@ -69,20 +81,52 @@ void setup()
   // ESP NOW Setup
   esp_now_init();
   esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
+delay(2000);
+  frameTimer.start();
+  //  timer1.start();
 
   // this is a register callback function set up that copies data to txrxData from received data.
   //  TODO is to make this a explicit function instead of an anonymous one in the declaration.
   esp_now_register_recv_cb([](uint8_t *mac, uint8_t *data, uint8_t len) {
   
     memcpy(txrxData, data, len);
-      Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
-       Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
+      //Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
+      //Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
+      //Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
+     // Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
+
+
+     //changeFrameInterval();
+     
+     // need a map here
   });
+}
+
+void changeFrameInterval (){
+
+ // if (oldFrame != (txrxData[FRAMERATE] + txrxData[FINEFRAMERATE])) 
+ // { 
+  //    oldFrame = (txrxData[FRAMERATE] + txrxData[FINEFRAMERATE]);
+      frameTimer.interval(
+        // take our rough frame and change milli to micro times 1000
+          (txrxData[FRAMERATE] * 1000 
+          //then take our fine frame rate and add a fractional millisecond up to 999
+          + map(txrxData[FINEFRAMERATE],0,0,254,999))
+        
+      );
+       //Serial.printf("Change Frame Interval");  
+ // };
+     
 }
 
 //  esp now will receive bytes without doing anything in loop.
 void loop()
 {
+  frameTimer.update();
+  // updates timer
+//  timer1.update();
+  changeFrameInterval();
+  
   ledTest();
   // we are always mapping cube to leds
   // but we periodically call next side at the framerate
@@ -94,11 +138,11 @@ void loop()
  FastLED.show();
 
  // this should change frameduration with the incoming framerate from controller
- EVERY_N_MILLISECONDS_I(thisTimer,100){
-  uint8_t timeval = txrxData[FRAMERATE];
-  thisTimer.setPeriod(timeval);
-  nextSide();
-  }
+// EVERY_N_MILLISECONDS_I(thisTimer,100){
+ // uint8_t timeval = txrxData[FRAMERATE];
+  //thisTimer.setPeriod(timeval);
+  //nextSide();
+  //}
   //Serial.print ("speed should be ");
  // Serial.println(txrxData[1]);
 }
@@ -130,7 +174,7 @@ void ledTest()
     // Wait a little bit before we loop around and do it again
     //delay(10);
   }
-};
+}
 
 void setSide(int side, int hue){
 
@@ -140,7 +184,7 @@ void setSide(int side, int hue){
   {
     cube[i] = CHSV(hue,255,255);
   }
-  
+//Serial.printf("SettheSide");
 }
 
 void fadeall()
@@ -171,6 +215,7 @@ void stripToCubeMap(){
 void nextSide(){
   side++;
   if (side == 4) {side = 0;}
+  //Serial.printf("next Side");
    
 }
 

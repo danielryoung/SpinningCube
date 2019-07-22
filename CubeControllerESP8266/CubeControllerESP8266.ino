@@ -29,7 +29,7 @@ Servo esc;
 //byte remoteMac[] = {0x3C, 0x71, 0xBF, 0x29, 0x52, 0x3C};
 byte remoteMac[] = {0x2C, 0x3A, 0xE8, 0x4E, 0x3C, 0xAE};
 
-#define MENU_ITEMS 3
+#define MENU_ITEMS 4
 // we want to have a menu for each value we are sending
 
 byte cnt=0;
@@ -83,6 +83,7 @@ typedef struct menu Menu;
   Menu patternColorMenu;
   Menu frameRateMenu;
   Menu motorSpeedMenu;  
+  Menu fineFrameRateMenu;
   //Menu twiddlerMenu;
   //Menu cubeMultiplier;
 
@@ -132,7 +133,7 @@ void setup() {
   patternColorMenu  =   {0,0,10,0,254,100};
   frameRateMenu     =   {1,0,15,0,255,50};
   motorSpeedMenu    =   {2,60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
-  
+  fineFrameRateMenu =   {3,0,0,0,254,150};
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
   // then all functions will act on the pCurrentMenu reference and act on whatever menu is there.
@@ -140,12 +141,12 @@ void setup() {
 
   // ESP NOW STUFF make a function 
   delay(10);
-  Serial.begin(115200);
+  //Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin();
-  Serial.print("\r\n\r\nDevice MAC: ");
-  Serial.println(WiFi.macAddress());
-  Serial.println("\r\nESP_Now Controller.");
+  //Serial.print("\r\n\r\nDevice MAC: ");
+ // Serial.println(WiFi.macAddress());
+  //Serial.println("\r\nESP_Now Controller.");
   esp_now_init();
   delay(10);
   esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
@@ -170,6 +171,7 @@ void loop() {
     transmitData[0] = patternColorMenu.currentValue;
     transmitData[1] = frameRateMenu.currentValue;
     transmitData[2] = motorSpeedMenu.currentValue;
+    transmitData[3] = fineFrameRateMenu.currentValue;
     
     result = esp_now_send(remoteMac, transmitData, MENU_ITEMS);
     
@@ -226,8 +228,8 @@ void readEncoder(Menu& currMenu){
           }
       }
     oldPosition = newPosition;
-    Serial.print("Value Changed to: ");
-    Serial.println(currMenu.currentValue);
+    //Serial.print("Value Changed to: ");
+    //Serial.println(currMenu.currentValue);
     transmitNeededFlag = true;
     
   }
@@ -245,12 +247,14 @@ void nextMenu(){
       break;
     case 2: pCurrentMenu = &motorSpeedMenu;
       break;
+    case 3: pCurrentMenu = &fineFrameRateMenu;
+      break;
     default: pCurrentMenu = &patternColorMenu;
   }
-  Serial.print("Menu is: ");
-  Serial.println(menuSelection);
-  Serial.print("CurrValue in Menu is: ");
-  Serial.println(pCurrentMenu->currentValue);
+  //Serial.print("Menu is: ");
+  //Serial.println(menuSelection);
+  //Serial.print("CurrValue in Menu is: ");
+  //Serial.println(pCurrentMenu->currentValue);
   // set LED to hue of pCurrentMenu
   // set starting encoder value to whatever the value was when we were last at this menu
 }
@@ -259,12 +263,12 @@ void toggleMotor(){
 // This will start up the motor or shut it down smoothly
   if (motorRunning){
     //if motor running is true, we stop...
-    Serial.println("Stopping Motor...");
+    //Serial.println("Stopping Motor...");
     motorDisarm(motorSpeedMenu.currentValue);
     // stop the motor! 
     motorRunning = false;
    }  else {
-    Serial.println("Starting Motor...");
+    //Serial.println("Starting Motor...");
     //start the motor
     motorArm(STARTUP_SPEED);
     motorRunning = true;
