@@ -29,11 +29,17 @@ Servo esc;
 //byte remoteMac[] = {0x3C, 0x71, 0xBF, 0x29, 0x52, 0x3C};
 byte remoteMac[] = {0x2C, 0x3A, 0xE8, 0x4E, 0x3C, 0xAE};
 
-#define MENU_ITEMS 4
+#define MENU_ITEMS 5
 // we want to have a menu for each value we are sending
 
+#define PATTERN     0
+#define FRAMERATE   1
+#define MOTORSPEED  2
+#define FINEFRAMERATE   3
+#define ONTIME  4
+
 byte cnt=0;
-byte transmitData[MENU_ITEMS];
+uint8_t transmitData[MENU_ITEMS];
 bool transmitNeededFlag = true;
 byte result;
 
@@ -84,6 +90,7 @@ typedef struct menu Menu;
   Menu frameRateMenu;
   Menu motorSpeedMenu;  
   Menu fineFrameRateMenu;
+  Menu onTimeMenu;
   //Menu twiddlerMenu;
   //Menu cubeMultiplier;
 
@@ -131,9 +138,10 @@ void setup() {
   //setup default menu params
                       //menuItem, init,current, min, max, ledhue
   patternColorMenu  =   {0,0,10,0,254,100};
-  frameRateMenu     =   {1,0,15,0,255,50};
+  frameRateMenu     =   {1,0,15,0,254,50};
   motorSpeedMenu    =   {2,60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
   fineFrameRateMenu =   {3,0,0,0,254,150};
+  onTimeMenu        =   {4,0,10,0,254,100};
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
   // then all functions will act on the pCurrentMenu reference and act on whatever menu is there.
@@ -141,7 +149,7 @@ void setup() {
 
   // ESP NOW STUFF make a function 
   delay(10);
-  //Serial.begin(115200);
+  Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin();
   //Serial.print("\r\n\r\nDevice MAC: ");
@@ -168,11 +176,12 @@ void loop() {
   if(transmitNeededFlag){
     // set all the current values before sending them to the cube.
     
-    transmitData[0] = patternColorMenu.currentValue;
-    transmitData[1] = frameRateMenu.currentValue;
-    transmitData[2] = motorSpeedMenu.currentValue;
-    transmitData[3] = fineFrameRateMenu.currentValue;
-    
+    transmitData[PATTERN] = patternColorMenu.currentValue;
+    transmitData[FRAMERATE] = frameRateMenu.currentValue;
+    transmitData[MOTORSPEED] = motorSpeedMenu.currentValue;
+    transmitData[FINEFRAMERATE] = fineFrameRateMenu.currentValue;
+    transmitData[ONTIME] = onTimeMenu.currentValue; 
+       
     result = esp_now_send(remoteMac, transmitData, MENU_ITEMS);
     
     transmitNeededFlag = false;
@@ -251,10 +260,10 @@ void nextMenu(){
       break;
     default: pCurrentMenu = &patternColorMenu;
   }
-  //Serial.print("Menu is: ");
-  //Serial.println(menuSelection);
-  //Serial.print("CurrValue in Menu is: ");
-  //Serial.println(pCurrentMenu->currentValue);
+  Serial.print("Menu is: ");
+  Serial.println(menuSelection);
+  Serial.print("CurrValue in Menu is: ");
+  Serial.println(pCurrentMenu->currentValue);
   // set LED to hue of pCurrentMenu
   // set starting encoder value to whatever the value was when we were last at this menu
 }

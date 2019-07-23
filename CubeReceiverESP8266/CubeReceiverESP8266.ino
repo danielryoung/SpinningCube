@@ -18,7 +18,7 @@ extern "C"
 #define DATA_PIN D7
 #define CLOCK_PIN D5
 
-#define MENU_ITEMS  4
+#define MENU_ITEMS  5
 // Menu Items needs to match the transmitted data size, which is also menu items in the controller code.
 
 // going to define each menu number so it has a name
@@ -26,6 +26,7 @@ extern "C"
 #define FRAMERATE   1
 #define MOTORSPEED  2
 #define FINEFRAMERATE   3
+#define ONTIME 4
 
 // How many leds in your strip?
 #define NUM_LEDS    24
@@ -38,7 +39,7 @@ CRGB cube[NUM_LEDS];
 // this is length of data sent in byte array txrxData.  this can be up to 100ish bytes
 
 
-byte txrxData[MENU_ITEMS];
+uint8_t txrxData[MENU_ITEMS];
 bool frameRateChange = 0;
 
 // initiate a tracker to only change frame rate when we get a new value
@@ -53,13 +54,14 @@ byte oldFrame = 0;
 //txrxData[MOTORSPEED] = 60;
 void nextSide();
 Ticker frameTimer(nextSide, 200,0, MICROS_MICROS);
+Ticker onTimer(turnOff,200,0,MICROS_MICROS);
 int side = 0;
 ///SETUP
 
 void setup()
 {
   // DEBUG SETUP prints MAC Address from WIFI Stack.  Only necessary to know receiver mac.
-  //Serial.begin(115200);
+ // Serial.begin(115200);
  // Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
   //WiFi.mode(WIFI_STA);
   //WiFi.begin();
@@ -72,6 +74,7 @@ void setup()
   txrxData[FRAMERATE] = 60;
   txrxData[MOTORSPEED] = 60;
   txrxData[FINEFRAMERATE] = 100;
+   txrxData[ONTIME] = 20;
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
@@ -90,14 +93,14 @@ delay(2000);
   esp_now_register_recv_cb([](uint8_t *mac, uint8_t *data, uint8_t len) {
   
     memcpy(txrxData, data, len);
-      //Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
-      //Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
-      //Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
-     // Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
-
-
+/*
+  Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
+  Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
+  Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
+  Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
+  Serial.printf("Got Ontime menu =\t%i\n\r", txrxData[ONTIME]);
      //changeFrameInterval();
-     
+ */   
      // need a map here
   });
 }
@@ -123,6 +126,7 @@ void changeFrameInterval (){
 void loop()
 {
   frameTimer.update();
+
   // updates timer
 //  timer1.update();
   changeFrameInterval();
@@ -136,6 +140,7 @@ void loop()
  //EVERY_N_SECONDS(10){txrxData[PATTERN]++;}
  //setSide();
  FastLED.show();
+ onTimer.update();
 
  // this should change frameduration with the incoming framerate from controller
 // EVERY_N_MILLISECONDS_I(thisTimer,100){
@@ -216,7 +221,14 @@ void nextSide(){
   side++;
   if (side == 4) {side = 0;}
   //Serial.printf("next Side");
-   
+  fill_solid( leds, NUM_LEDS, CRGB(50,0,200));
+  onTimer.start(); 
+}
+
+void turnOff(){
+  fill_solid( leds, NUM_LEDS, CRGB(0,0,0));
+  FastLED.show();
+  //Serial.printf("TurnOff Fired =\t%i\n\r", txrxData[ONTIME]);
 }
 
 /**
