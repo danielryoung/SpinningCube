@@ -22,11 +22,11 @@ extern "C"
 // Menu Items needs to match the transmitted data size, which is also menu items in the controller code.
 
 // going to define each menu number so it has a name
-#define PATTERN     0
-#define FRAMERATE   1
-#define MOTORSPEED  2
-#define FINEFRAMERATE   3
-#define ONTIME 4
+#define PATTERN       0
+#define FRAMERATE     1
+#define MOTORSPEED    2
+#define FINEFRAMERATE 3
+#define ONTIME        4
 
 // How many leds in your strip?
 #define NUM_LEDS    24
@@ -56,6 +56,9 @@ void nextSide();
 Ticker frameTimer(nextSide, 200,0, MICROS_MICROS);
 Ticker onTimer(turnOff,200,0,MICROS_MICROS);
 int side = 0;
+
+bool cubeIsOn = true;
+
 ///SETUP
 
 void setup()
@@ -70,11 +73,11 @@ void setup()
   //  Comment out above dbug and serial for prod code.  slows down everything.
 
   // init values for each menu:
-  txrxData[PATTERN] = 1;
-  txrxData[FRAMERATE] = 60;
-  txrxData[MOTORSPEED] = 60;
+  txrxData[PATTERN] =       1;
+  txrxData[FRAMERATE] =     60;
+  txrxData[MOTORSPEED] =    60;
   txrxData[FINEFRAMERATE] = 100;
-   txrxData[ONTIME] = 20;
+  txrxData[ONTIME] =        20;
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
@@ -130,21 +133,29 @@ void changeFrameInterval (){
 void loop()
 {
   frameTimer.update();
+  onTimer.update();
 
   // updates timer
 //  timer1.update();
   changeFrameInterval();
   
-  ledTest();
+  //ledPattern();
   // we are always mapping cube to leds
   // but we periodically call next side at the framerate
- stripToCubeMap();
+ if (cubeIsOn){
+  ledPattern();
  
+ } else {
+  turnOff();
+ }
+ 
+ FastLED.show(); 
+ stripToCubeMap();
  //change pattern every ten sec.  for now pattern is just HUE
  //EVERY_N_SECONDS(10){txrxData[PATTERN]++;}
  //setSide();
- FastLED.show();
- onTimer.update();
+ //FastLED.show();
+
 
  // this should change frameduration with the incoming framerate from controller
 // EVERY_N_MILLISECONDS_I(thisTimer,100){
@@ -156,7 +167,7 @@ void loop()
  // Serial.println(txrxData[1]);
 }
 
-void ledTest()
+void ledPattern()
 {
   static uint8_t globalHue = txrxData[0];
   // static means the value will be maintained outside the function!
@@ -221,17 +232,19 @@ void stripToCubeMap(){
   
 }
 
+
 void nextSide(){
   side++;
   if (side == 4) {side = 0;}
   //Serial.printf("next Side");
-  fill_solid( leds, NUM_LEDS, CRGB(50,0,200));
+ // fill_solid( leds, NUM_LEDS, CRGB(50,0,200));
   onTimer.start(); 
 }
 
+
 void turnOff(){
   fill_solid( leds, NUM_LEDS, CRGB(0,0,0));
-  FastLED.show();
+ // FastLED.show();
   //Serial.printf("TurnOff Fired =\t%i\n\r", txrxData[ONTIME]);
 }
 
