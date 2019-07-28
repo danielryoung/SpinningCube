@@ -117,6 +117,10 @@ void changeFrameInterval (){
           + map(txrxData[FINEFRAMERATE],0,0,254,999))
         
       );
+
+      // this sets the time the frame will be on. 
+      //for now a menu choice, but should be done with math
+      onTimer.interval( txrxData[ONTIME] );
        //Serial.printf("Change Frame Interval");  
  // };
      
