@@ -258,6 +258,8 @@ void nextMenu(){
       break;
     case 3: pCurrentMenu = &fineFrameRateMenu;
       break;
+    case 4: pCurrentMenu = &onTimeMenu;
+      break;
     default: pCurrentMenu = &patternColorMenu;
   }
   Serial.print("Menu is: ");
