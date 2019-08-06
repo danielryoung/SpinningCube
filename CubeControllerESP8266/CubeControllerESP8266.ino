@@ -44,7 +44,7 @@ bool transmitNeededFlag = true;
 byte result;
 
 bool motorRunning = false;
-#define STARTUP_SPEED 90 
+#define STARTUP_SPEED 110 
 // End Transmitter and Servo
 
 // BUTTON MENU STUFF
@@ -137,11 +137,11 @@ void setup() {
 
   //setup default menu params
                       //menuItem, init,current, min, max, ledhue
-  patternColorMenu  =   {0,0,10,0,254,100};
-  frameRateMenu     =   {1,0,15,0,254,50};
-  motorSpeedMenu    =   {2,60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
-  fineFrameRateMenu =   {3,0,0,0,254,150};
-  onTimeMenu        =   {4,0,10,0,254,100};
+  patternColorMenu  =   {0,1,10,1,254,100};
+  frameRateMenu     =   {1,1,15,1,254,50};
+  motorSpeedMenu    =   {2,60,60,45,130,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
+  fineFrameRateMenu =   {3,3,3,3,254,150};
+  onTimeMenu        =   {4,1,10,1,254,100};
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
   // then all functions will act on the pCurrentMenu reference and act on whatever menu is there.
@@ -149,7 +149,7 @@ void setup() {
 
   // ESP NOW STUFF make a function 
   delay(10);
-  Serial.begin(115200);
+  //Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin();
   //Serial.print("\r\n\r\nDevice MAC: ");
@@ -291,7 +291,7 @@ void motorArm(int start_speed)
     for (i=0; i < start_speed; i++) {
       motorSetSpeed(i);
       //Serial.println(i);
-      delay(100);
+      delay(80);
       // TODO get rid of delay use timer?
     }
 }
@@ -303,7 +303,7 @@ void motorDisarm( int currSpeed)
       //increment currspeed down until its at 50
       motorSetSpeed(i);
       //Serial.println(i);
-      delay(100);
+      delay(80);
       // TODO get rid of delay use timer?
     }
   

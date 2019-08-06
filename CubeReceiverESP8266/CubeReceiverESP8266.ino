@@ -55,6 +55,7 @@ byte oldFrame = 0;
 void nextSide();
 Ticker frameTimer(nextSide, 200,0, MICROS_MICROS);
 Ticker onTimer(turnOff,200,0,MICROS_MICROS);
+//Ticker 
 int side = 0;
 
 bool cubeIsOn = true;
@@ -74,14 +75,14 @@ void setup()
 
   // init values for each menu:
   txrxData[PATTERN] =       1;
-  txrxData[FRAMERATE] =     60;
+  txrxData[FRAMERATE] =     6;
   txrxData[MOTORSPEED] =    60;
   txrxData[FINEFRAMERATE] = 100;
-  txrxData[ONTIME] =        20;
+  txrxData[ONTIME] =        5;
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(84);
+  LEDS.setBrightness(90);
   // ideally we would do some power calc and set max current here  TODO
 
   // ESP NOW Setup
@@ -97,10 +98,10 @@ delay(2000);
   
     memcpy(txrxData, data, len);
 /*
-  Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
   Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
-  Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
+  Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
   Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
+  Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
   Serial.printf("Got Ontime menu =\t%i\n\r", txrxData[ONTIME]);
      //changeFrameInterval();
  */   
@@ -117,7 +118,7 @@ void changeFrameInterval (){
         // take our rough frame and change milli to micro times 1000
           (txrxData[FRAMERATE] * 1000 
           //then take our fine frame rate and add a fractional millisecond up to 999
-          + map(txrxData[FINEFRAMERATE],0,0,254,999))
+          + map(txrxData[FINEFRAMERATE],0,254,0,999))
         
       );
 
@@ -169,7 +170,7 @@ void loop()
 
 void ledPattern()
 {
-  static uint8_t globalHue = txrxData[0];
+  static uint8_t globalHue = txrxData[PATTERN];
   // static means the value will be maintained outside the function!
   
     for (int i = (NUM_LEDS)-1; i >= 0; i--)
@@ -237,7 +238,7 @@ void nextSide(){
   side++;
   if (side == 4) {side = 0;}
   //Serial.printf("next Side");
- // fill_solid( leds, NUM_LEDS, CRGB(50,0,200));
+  if(txrxData[FRAMERATE] <= 220){fill_solid( leds, NUM_LEDS, CRGB(50,0,200));}
   onTimer.start(); 
 }
 
@@ -248,7 +249,7 @@ void turnOff(){
   //Serial.printf("TurnOff Fired =\t%i\n\r", txrxData[ONTIME]);
 }
 
-/**
+
 void cylon()
 {
   static uint8_t hue = 0;
@@ -283,4 +284,3 @@ void cylon()
     delay(10);
   }
 }
-**/
