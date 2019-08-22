@@ -238,7 +238,7 @@ void nextSide(){
   side++;
   if (side == 4) {side = 0;}
   //Serial.printf("next Side");
-  if(txrxData[FRAMERATE] <= 220){fill_solid( leds, NUM_LEDS, CRGB(50,0,200));}
+  //if(txrxData[FRAMERATE] <= 220){fill_solid( leds, NUM_LEDS, CRGB(50,0,200));}
   onTimer.start(); 
 }
 
