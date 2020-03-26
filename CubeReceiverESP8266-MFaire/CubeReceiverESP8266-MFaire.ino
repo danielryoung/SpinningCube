@@ -25,7 +25,7 @@ extern "C"
 #define MOTORSPEED  2
 
 // How many leds in your strip?
-#define NUM_LEDS    24
+#define NUM_LEDS    48
 
 // Define the array of leds
 CRGB leds[NUM_LEDS];
@@ -48,7 +48,7 @@ int side = 0;
 void setup()
 {
   // DEBUG SETUP prints MAC Address from WIFI Stack.  Only necessary to know receiver mac.
-  Serial.begin(115200);
+ // Serial.begin(115200);
  // Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
   //WiFi.mode(WIFI_STA);
   //WiFi.begin();
@@ -58,12 +58,12 @@ void setup()
 
   // init values for each menu:
   txrxData[PATTERN] = 1;
-  txrxData[FRAMERATE] = 60;
+  txrxData[FRAMERATE] = 220;
   txrxData[MOTORSPEED] = 60;
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(84);
+  LEDS.setBrightness(5);
   // ideally we would do some power calc and set max current here  TODO
 
   // ESP NOW Setup
@@ -75,8 +75,8 @@ void setup()
   esp_now_register_recv_cb([](uint8_t *mac, uint8_t *data, uint8_t len) {
   
     memcpy(txrxData, data, len);
-      Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
-       Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
+     // Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
+    //   Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
   });
 }
 
@@ -136,7 +136,7 @@ void setSide(int side, int hue){
 
   side = side % 4;
   //fadeall();
-  for (int i = 0 + (side * 6); i < (6 + (side * 6)); i++)
+  for (int i = 0 + (side * 12); i < (12 + (side * 12)); i++)
   {
     cube[i] = CHSV(hue,255,255);
   }
@@ -156,10 +156,10 @@ void stripToCubeMap(){
   {
      //remap each led from cube position to correct strip position
      
-    int n = (i + 6 * side)%24;
+    int n = (i + 12 * side)%48;
     leds[n] = cube[i];
-   // Serial.print("N: ");
-   //Serial.println(n);
+    Serial.print("N: ");
+   Serial.println(n);
     //Serial.print("I: ");
     //Serial.println(i);
     //Serial.print("Side: ");

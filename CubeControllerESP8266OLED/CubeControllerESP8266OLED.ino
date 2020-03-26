@@ -23,11 +23,29 @@ extern "C" {
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include "Adafruit_SSD1306.h"
 
 
-Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
+#define OLED_RESET 0  // GPIO0
+Adafruit_SSD1306 display(OLED_RESET);
 
+#define NUMFLAKES 10
+#define XPOS 0
+#define YPOS 1
+#define DELTAY 2
+
+
+#define LOGO16_GLCD_HEIGHT 16
+#define LOGO16_GLCD_WIDTH  16
+
+static const unsigned char PROGMEM logo16_glcd_bmp[] =
+{ // 'meltycube3', 16x16px
+0xc6, 0x00, 0xc6, 0x00, 0x6c, 0x00, 0x6c, 0x00, 0x7c, 0x00, 0x54, 0x00, 0x54, 0x00, 0xc4, 0x10, 
+0x4a, 0xbd, 0xcc, 0x92, 0x06, 0xd2, 0x00, 0x00, 0xe0, 0x80, 0x8a, 0xee, 0x8a, 0xac, 0xee, 0xee };
+
+#if (SSD1306_LCDHEIGHT != 48)
+#error("Height incorrect, please fix Adafruit_SSD1306.h!");
+#endif
 
 Servo esc;
 
@@ -72,7 +90,7 @@ const int BUTTON_PIN = D5;
 //   Best Performance: both pins have interrupt capability
 //   Good Performance: only the first pin has interrupt capability
 //   Low Performance:  neither pin has interrupt capability
-Encoder myEnc(D6, D7);
+Encoder myEnc(D7, D6);
 
 long oldPosition  = -999; 
 
@@ -85,7 +103,7 @@ long oldPosition  = -999;
 int menuSelection = 0;
 struct menu
 {
-   int menuItem;
+   String menuItem;
    int initialValue;
    int currentValue;
    int minValue;
@@ -119,7 +137,7 @@ const int LED_OFF = LOW;
 
 //MOTOR and SERVO Stuff
 // this is actually D2 on the d1 knock offs
-#define SERVO_PIN D4
+#define SERVO_PIN 0
 #define MOTOR_START_SPEED 60
 
 // One button wired to the pin at BUTTON_PIN. Automatically uses the default
@@ -131,7 +149,7 @@ void handleEvent(AceButton*, uint8_t, uint8_t);
 
 void setup() {
   // initialize built-in LED as an output
-  pinMode(LED_PIN, OUTPUT);
+  //pinMode(LED_PIN, OUTPUT);
 
   // Button is connected to 3.3 V so it runs revers logic from default config.  set this at constructor.
   pinMode(BUTTON_PIN, INPUT);
@@ -148,11 +166,11 @@ void setup() {
 
   //setup default menu params
                       //menuItem, init,current, min, max, ledhue
-  patternColorMenu  =   {0,1,10,1,254,100};
-  frameRateMenu     =   {1,1,15,1,254,50};
-  motorSpeedMenu    =   {2,60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
-  fineFrameRateMenu =   {3,3,3,3,254,150};
-  onTimeMenu        =   {4,1,10,1,254,100};
+  patternColorMenu  =   {"Color",1,10,1,254,100};
+  frameRateMenu     =   {"Frequency",1,15,1,254,50};
+  motorSpeedMenu    =   {"Motor",60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
+  fineFrameRateMenu =   {"Fine Frequency",3,3,3,254,150};
+  onTimeMenu        =   {"On Time",1,10,1,254,100};
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
   // then all functions will act on the pCurrentMenu reference and act on whatever menu is there.
@@ -210,38 +228,34 @@ void loop() {
 }
 
 void setupOLED () {
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Address 0x3C for 128x32
-
-  Serial.println("OLED begun");
+display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 64x48)
+  // init done
 
   // Show image buffer on the display hardware.
   // Since the buffer is intialized with an Adafruit splashscreen
   // internally, this will display the splashscreen.
   display.display();
-  delay(1000);
-
-  // Clear the buffer.
-  display.clearDisplay();
-  display.display();
-
-   // text display tests
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0,0);
-  display.print("Connecting to SSID\n'adafruit':");
-  display.print("connected!");
-  display.println("IP: 10.0.1.23");
-  display.println("Sending val #0");
-  display.setCursor(0,0);
-  display.display(); // actually display all of the above
+  delay(200);
+ display.clearDisplay();
 
 }
 
-void displaySomething (){
-  display.print("C");
-  delay(10);
-  yield();
+void displaySomething (Menu& currMenu){
+  display.clearDisplay();
+   display.setTextSize(1.9);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+
+
+    display.println(currMenu.menuItem);
+      
+      //display.print("V: ");
+      display.setTextSize(2);
+      display.println();
+      display.println(currMenu.currentValue);
+  display.println();
   display.display();
+  delay(1);
 }
 // The event handler for the button.
 void handleEvent(AceButton* /* button */, uint8_t eventType,
@@ -252,7 +266,7 @@ void handleEvent(AceButton* /* button */, uint8_t eventType,
       //Serial.println("Single Click");
       // click switches menu item so increment menuSelection++
       nextMenu();
-      
+      displaySomething(*pCurrentMenu);
       break;
     case AceButton::kEventDoubleClicked:
       //Serial.println("DoubleClick");
@@ -284,7 +298,8 @@ void readEncoder(Menu& currMenu){
     oldPosition = newPosition;
 
     //OLED 
-    displaySomething();
+    
+    displaySomething(*pCurrentMenu);
     
     //Serial.print("Value Changed to: ");
     //Serial.println(currMenu.currentValue);

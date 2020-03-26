@@ -18,6 +18,8 @@ extern "C"
 #define DATA_PIN D7
 #define CLOCK_PIN D5
 
+#define L_P_SIDE 12
+
 #define MENU_ITEMS  5
 // Menu Items needs to match the transmitted data size, which is also menu items in the controller code.
 
@@ -29,7 +31,7 @@ extern "C"
 #define ONTIME        4
 
 // How many leds in your strip?
-#define NUM_LEDS    24
+#define NUM_LEDS    48
 
 // Define the array of leds
 CRGB leds[NUM_LEDS];
@@ -40,7 +42,7 @@ CRGB cube[NUM_LEDS];
 
 
 uint8_t txrxData[MENU_ITEMS];
-bool frameRateChange = 0;
+bool frameRateChange = 1;
 
 // initiate a tracker to only change frame rate when we get a new value
 byte oldFrame = 0;
@@ -59,13 +61,13 @@ Ticker onTimer(turnOff,200,0,MICROS_MICROS);
 int side = 0;
 
 bool cubeIsOn = true;
-
+//bool debugOn = true;
 ///SETUP
 
 void setup()
 {
   // DEBUG SETUP prints MAC Address from WIFI Stack.  Only necessary to know receiver mac.
- // Serial.begin(115200);
+  //Serial.begin(115200);
  // Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
   //WiFi.mode(WIFI_STA);
   //WiFi.begin();
@@ -75,59 +77,65 @@ void setup()
 
   // init values for each menu:
   txrxData[PATTERN] =       1;
-  txrxData[FRAMERATE] =     6;
+  txrxData[FRAMERATE] =     200;
   txrxData[MOTORSPEED] =    60;
-  txrxData[FINEFRAMERATE] = 100;
-  txrxData[ONTIME] =        5;
+  txrxData[FINEFRAMERATE] = 10;
+  txrxData[ONTIME] =        200; // this is a percent of the time the next side swithc is black for
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(90);
+  LEDS.setBrightness(5);
   // ideally we would do some power calc and set max current here  TODO
 
   // ESP NOW Setup
   esp_now_init();
   esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
 delay(2000);
+ 
+ onTimer.interval( (2000 * .95) );
+ frameTimer.interval( 2000 ); 
   frameTimer.start();
-  //  timer1.start();
+  onTimer.start();
 
   // this is a register callback function set up that copies data to txrxData from received data.
   //  TODO is to make this a explicit function instead of an anonymous one in the declaration.
   esp_now_register_recv_cb([](uint8_t *mac, uint8_t *data, uint8_t len) {
   
     memcpy(txrxData, data, len);
-/*
-  Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
-  Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
-  Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
-  Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
-  Serial.printf("Got Ontime menu =\t%i\n\r", txrxData[ONTIME]);
-     //changeFrameInterval();
- */   
+   changeFrameInterval ();
+
+ // Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
+ // Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
+ // Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
+  //Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
+  //Serial.printf("Got Ontime menu =\t%i\n\r", txrxData[ONTIME]);
+     
+   
      // need a map here
   });
 }
 
 void changeFrameInterval (){
-
- // if (oldFrame != (txrxData[FRAMERATE] + txrxData[FINEFRAMERATE])) 
- // { 
-  //    oldFrame = (txrxData[FRAMERATE] + txrxData[FINEFRAMERATE]);
-      frameTimer.interval(
-        // take our rough frame and change milli to micro times 1000
-          (txrxData[FRAMERATE] * 1000 
-          //then take our fine frame rate and add a fractional millisecond up to 999
-          + map(txrxData[FINEFRAMERATE],0,254,0,999))
-        
-      );
+  
+  uint32_t onDurationMicros = ((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,999));
+  //(txrxData[FRAMERATE] * 100 );
+  //((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,999));
+  //take our rough frame and change milli to micro times 1000
+  //then take our fine frame rate and add a fractional millisecond up to 999
+  //Serial.print("onfor: ");
+  //Serial.println(onDurationMicros);
+ 
+  uint32_t turnOffAfter = map(txrxData[ONTIME],0,254,0,onDurationMicros );
+ // Serial.print("offafter: ");
+ // Serial.println(turnOffAfter);
+  //(onDurationMicros - txrxData[ONTIME]) ;
+  //map(txrxData[ONTIME],0,255,onDurationMicros,1);
 
       // this sets the time the frame will be on. 
       //for now a menu choice, but should be done with math
-      onTimer.interval( txrxData[ONTIME] );
+  onTimer.interval( turnOffAfter );
        //Serial.printf("Change Frame Interval");  
- // };
-     
+   frameTimer.interval(onDurationMicros);
 }
 
 //  esp now will receive bytes without doing anything in loop.
@@ -137,19 +145,23 @@ void loop()
   onTimer.update();
 
   // updates timer
-//  timer1.update();
-  changeFrameInterval();
+  //  timer1.update();
+  //changeFrameInterval();
   
   //ledPattern();
   // we are always mapping cube to leds
   // but we periodically call next side at the framerate
- if (cubeIsOn){
+  if (cubeIsOn){
   ledPattern();
  
  } else {
   turnOff();
  }
- 
+
+ //if (debugIsOn){
+  
+ //cube[1] = CHSV(map(txrx, 255, 255);
+ //}
  FastLED.show(); 
  stripToCubeMap();
  //change pattern every ten sec.  for now pattern is just HUE
@@ -173,8 +185,8 @@ void ledPattern()
   static uint8_t globalHue = txrxData[PATTERN];
   // static means the value will be maintained outside the function!
   
-    for (int i = (NUM_LEDS)-1; i >= 0; i--)
-  {
+//    for (int i = (NUM_LEDS)-1; i >= 0; i--)
+ // {
     // Set the i'th led to red
    // leds[i] = CHSV(100, 255, 255);
    // cube[6] = CHSV(hue++,255,255);
@@ -194,14 +206,14 @@ void ledPattern()
     //fadeall();
     // Wait a little bit before we loop around and do it again
     //delay(10);
-  }
+ // }
 }
 
 void setSide(int side, int hue){
 
   side = side % 4;
   //fadeall();
-  for (int i = 0 + (side * 6); i < (6 + (side * 6)); i++)
+  for (int i = 0 + (side * L_P_SIDE); i < (L_P_SIDE + (side * L_P_SIDE)); i++)
   {
     cube[i] = CHSV(hue,255,255);
   }
@@ -221,7 +233,7 @@ void stripToCubeMap(){
   {
      //remap each led from cube position to correct strip position
      
-    int n = (i + 6 * side)%24;
+    int n = (i + L_P_SIDE * side)%NUM_LEDS;
     leds[n] = cube[i];
    // Serial.print("N: ");
    //Serial.println(n);
@@ -240,16 +252,18 @@ void nextSide(){
   //Serial.printf("next Side");
   //if(txrxData[FRAMERATE] <= 220){fill_solid( leds, NUM_LEDS, CRGB(50,0,200));}
   onTimer.start(); 
+  cubeIsOn = true;
 }
 
 
 void turnOff(){
   fill_solid( leds, NUM_LEDS, CRGB(0,0,0));
+  cubeIsOn = false;
  // FastLED.show();
   //Serial.printf("TurnOff Fired =\t%i\n\r", txrxData[ONTIME]);
 }
 
-
+/**
 void cylon()
 {
   static uint8_t hue = 0;
@@ -284,3 +298,4 @@ void cylon()
     delay(10);
   }
 }
+**/
