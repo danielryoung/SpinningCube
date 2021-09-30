@@ -1,6 +1,7 @@
 /// LIBS
 #include <ESP8266WiFi.h>
-#include "Ticker.h"
+#include <Ticker.h>
+#include "Arduino.h"
 extern "C"
 {
 #include <espnow.h>
@@ -56,7 +57,7 @@ byte oldFrame = 0;
 //txrxData[MOTORSPEED] = 60;
 void nextSide();
 Ticker frameTimer(nextSide, 200,0, MICROS_MICROS);
-Ticker onTimer(turnOff,200,0,MICROS_MICROS);
+Ticker onTimer(turnOff,200,0, MICROS_MICROS);
 //Ticker 
 int side = 0;
 
@@ -71,7 +72,7 @@ void setup()
  // Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
   //WiFi.mode(WIFI_STA);
   //WiFi.begin();
-  //Serial.print("\r\n\r\nDevice MAC: ");
+ // Serial.print("\r\n\r\nDevice MAC: ");
   //Serial.println(WiFi.macAddress());
   //  Comment out above dbug and serial for prod code.  slows down everything.
 
@@ -84,7 +85,7 @@ void setup()
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(5);
+  LEDS.setBrightness(100);
   // ideally we would do some power calc and set max current here  TODO
 
   // ESP NOW Setup
@@ -117,17 +118,18 @@ delay(2000);
 
 void changeFrameInterval (){
   
-  uint32_t onDurationMicros = ((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,999));
+  uint32_t onDurationMicros = ((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,9999));
   //(txrxData[FRAMERATE] * 100 );
   //((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,999));
   //take our rough frame and change milli to micro times 1000
   //then take our fine frame rate and add a fractional millisecond up to 999
   //Serial.print("onfor: ");
   //Serial.println(onDurationMicros);
- 
-  uint32_t turnOffAfter = map(txrxData[ONTIME],0,254,0,onDurationMicros );
- // Serial.print("offafter: ");
- // Serial.println(turnOffAfter);
+   //Serial.print("onfor: ");
+  //Serial.println(onDurationMicros);
+  uint32_t turnOffAfter = map(txrxData[ONTIME],0,254,0,(onDurationMicros +1 /25) );
+  //Serial.print("offafter: ");
+  //Serial.println(turnOffAfter);
   //(onDurationMicros - txrxData[ONTIME]) ;
   //map(txrxData[ONTIME],0,255,onDurationMicros,1);
 
@@ -155,7 +157,7 @@ void loop()
   ledPattern();
  
  } else {
-  turnOff();
+ // turnOff();
  }
 
  //if (debugIsOn){
@@ -259,7 +261,7 @@ void nextSide(){
 void turnOff(){
   fill_solid( leds, NUM_LEDS, CRGB(0,0,0));
   cubeIsOn = false;
- // FastLED.show();
+  FastLED.show();
   //Serial.printf("TurnOff Fired =\t%i\n\r", txrxData[ONTIME]);
 }
 
