@@ -74,7 +74,7 @@ elapsedMicros offFlash;
 
 CRGB leds[NUM_LEDS];
 //globals
-unsigned int flashTime = 3000;
+unsigned int flashTime = 10000;
 
 //this is the Motor speed that motor is moving at, will change
 int currentMotorSpeed = 40;
@@ -137,8 +137,9 @@ void parseReading(){
     reading = HWSERIAL.read();
  
     desiredMotorSpeed = reading; //pot1 first val comma sep
-    flashRate = map(reading,0,180,200,60);
-    flashTime = 12000;
+    flashRate = map(reading,0,180,10,60);
+    flashTime = map(reading,0,180,8000,20000);
+   // flashTime = 12000;
     //TODO Calculate flash time from flashrate in microseconds
     
    }
@@ -169,19 +170,23 @@ void loop() {
 
 //see if its time to turn on then wait to turn off again
 
-if (reading > 30) {
+if (reading > 0) {
   
   if(sinceFlash > flashRate){
     CRGB color1 = CRGB::Red;
-    CRGB color2 = CRGB::Blue;
+    CRGB color2 = CRGB::Green;
     for( int i = 0; i < NUM_LEDS; i++) {
        int g = ((LED_GROUP + i) - (i%LED_GROUP))/ LED_GROUP;
 
        switch (g) {
         case 1: leds[i] = color1;
+        break;
         case 2: leds[i] = color2;
+        break;
         case 3: leds[i] = color1;
+        break;
         case 4: leds[i] = color2;
+        break;
         }
  
     }
@@ -189,12 +194,12 @@ if (reading > 30) {
     offFlash = 0;
   }
   if (offFlash > flashTime){
-    CRGB color = CRGB::Cyan;
+    CRGB color = CRGB::Blue;
    for( int i = 0; i < NUM_LEDS; i++) {
    
     leds[i] = color;
       }
-    //sinceFlash = 0;
+    offFlash = 0;
   } 
 }else {
   Fire2012();
