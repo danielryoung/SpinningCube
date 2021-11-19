@@ -19,16 +19,6 @@ extern "C" {
 
 #include <Servo.h>
 
-// i2c oled display setup
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
-
-Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
-
-
 Servo esc;
 
 
@@ -39,22 +29,16 @@ Servo esc;
 //byte remoteMac[] = {0x3C, 0x71, 0xBF, 0x29, 0x52, 0x3C};
 byte remoteMac[] = {0x2C, 0x3A, 0xE8, 0x4E, 0x3C, 0xAE};
 
-#define MENU_ITEMS 5
+#define MENU_ITEMS 3
 // we want to have a menu for each value we are sending
 
-#define PATTERN     0
-#define FRAMERATE   1
-#define MOTORSPEED  2
-#define FINEFRAMERATE   3
-#define ONTIME  4
-
 byte cnt=0;
-uint8_t transmitData[MENU_ITEMS];
+byte transmitData[MENU_ITEMS];
 bool transmitNeededFlag = true;
 byte result;
 
 bool motorRunning = false;
-#define STARTUP_SPEED 110 
+#define STARTUP_SPEED 90 
 // End Transmitter and Servo
 
 // BUTTON MENU STUFF
@@ -99,8 +83,6 @@ typedef struct menu Menu;
   Menu patternColorMenu;
   Menu frameRateMenu;
   Menu motorSpeedMenu;  
-  Menu fineFrameRateMenu;
-  Menu onTimeMenu;
   //Menu twiddlerMenu;
   //Menu cubeMultiplier;
 
@@ -118,8 +100,8 @@ const int LED_OFF = LOW;
 // END BUTTON DEBUG
 
 //MOTOR and SERVO Stuff
-// this is actually D2 on the d1 knock offs
-#define SERVO_PIN D4
+// this is actually labeled D2 on the d1 knock offs for d4 og controller
+#define SERVO_PIN 0
 #define MOTOR_START_SPEED 60
 
 // One button wired to the pin at BUTTON_PIN. Automatically uses the default
@@ -136,7 +118,6 @@ void setup() {
   // Button is connected to 3.3 V so it runs revers logic from default config.  set this at constructor.
   pinMode(BUTTON_PIN, INPUT);
 
-  setupOLED();
   
   ButtonConfig* buttonConfig = button.getButtonConfig();
   buttonConfig->setEventHandler(handleEvent);
@@ -148,24 +129,23 @@ void setup() {
 
   //setup default menu params
                       //menuItem, init,current, min, max, ledhue
-  patternColorMenu  =   {0,1,10,1,254,100};
-  frameRateMenu     =   {1,1,15,1,254,50};
+  patternColorMenu  =   {0,0,10,0,254,100};
+  frameRateMenu     =   {1,0,15,0,255,50};
   motorSpeedMenu    =   {2,60,60,45,179,0}; // TO DO Need initial value after spin up, then make adjustments to that.  NOT ZERO
-  fineFrameRateMenu =   {3,3,3,3,254,150};
-  onTimeMenu        =   {4,1,10,1,254,100};
+  
   // set up the pattern menu as init menu
   // later we reassign pCurrentMenu to each menu when we change
   // then all functions will act on the pCurrentMenu reference and act on whatever menu is there.
-  pCurrentMenu = &frameRateMenu;
+  pCurrentMenu = &patternColorMenu;
 
   // ESP NOW STUFF make a function 
   delay(10);
-  //Serial.begin(115200);
+  Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin();
-  //Serial.print("\r\n\r\nDevice MAC: ");
- // Serial.println(WiFi.macAddress());
-  //Serial.println("\r\nESP_Now Controller.");
+  Serial.print("\r\n\r\nDevice MAC: ");
+  Serial.println(WiFi.macAddress());
+  Serial.println("\r\nESP_Now Controller.");
   esp_now_init();
   delay(10);
   esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
@@ -187,12 +167,10 @@ void loop() {
   if(transmitNeededFlag){
     // set all the current values before sending them to the cube.
     
-    transmitData[PATTERN] = patternColorMenu.currentValue;
-    transmitData[FRAMERATE] = frameRateMenu.currentValue;
-    transmitData[MOTORSPEED] = motorSpeedMenu.currentValue;
-    transmitData[FINEFRAMERATE] = fineFrameRateMenu.currentValue;
-    transmitData[ONTIME] = onTimeMenu.currentValue; 
-       
+    transmitData[0] = patternColorMenu.currentValue;
+    transmitData[1] = frameRateMenu.currentValue;
+    transmitData[2] = motorSpeedMenu.currentValue;
+    
     result = esp_now_send(remoteMac, transmitData, MENU_ITEMS);
     
     transmitNeededFlag = false;
@@ -209,47 +187,13 @@ void loop() {
 
 }
 
-void setupOLED () {
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // Address 0x3C for 128x32
-
-  Serial.println("OLED begun");
-
-  // Show image buffer on the display hardware.
-  // Since the buffer is intialized with an Adafruit splashscreen
-  // internally, this will display the splashscreen.
-  display.display();
-  delay(1000);
-
-  // Clear the buffer.
-  display.clearDisplay();
-  display.display();
-
-   // text display tests
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0,0);
-  display.print("Connecting to SSID\n'adafruit':");
-  display.print("connected!");
-  display.println("IP: 10.0.1.23");
-  display.println("Sending val #0");
-  display.setCursor(0,0);
-  display.display(); // actually display all of the above
-
-}
-
-void displaySomething (){
-  display.print("C");
-  delay(10);
-  yield();
-  display.display();
-}
 // The event handler for the button.
 void handleEvent(AceButton* /* button */, uint8_t eventType,
     uint8_t /* buttonState */) {
   switch (eventType) {
     case AceButton::kEventClicked:
     case AceButton::kEventReleased:
-      //Serial.println("Single Click");
+      Serial.println("Single Click");
       // click switches menu item so increment menuSelection++
       nextMenu();
       
@@ -282,12 +226,8 @@ void readEncoder(Menu& currMenu){
           }
       }
     oldPosition = newPosition;
-
-    //OLED 
-    displaySomething();
-    
-    //Serial.print("Value Changed to: ");
-    //Serial.println(currMenu.currentValue);
+    Serial.print("Value Changed to: ");
+    Serial.println(currMenu.currentValue);
     transmitNeededFlag = true;
     
   }
@@ -305,10 +245,6 @@ void nextMenu(){
       break;
     case 2: pCurrentMenu = &motorSpeedMenu;
       break;
-    case 3: pCurrentMenu = &fineFrameRateMenu;
-      break;
-    case 4: pCurrentMenu = &onTimeMenu;
-      break;
     default: pCurrentMenu = &patternColorMenu;
   }
   Serial.print("Menu is: ");
@@ -323,12 +259,12 @@ void toggleMotor(){
 // This will start up the motor or shut it down smoothly
   if (motorRunning){
     //if motor running is true, we stop...
-    //Serial.println("Stopping Motor...");
+    Serial.println("Stopping Motor...");
     motorDisarm(motorSpeedMenu.currentValue);
     // stop the motor! 
     motorRunning = false;
    }  else {
-    //Serial.println("Starting Motor...");
+    Serial.println("Starting Motor...");
     //start the motor
     motorArm(STARTUP_SPEED);
     motorRunning = true;
@@ -352,7 +288,7 @@ void motorDisarm( int currSpeed)
       //increment currspeed down until its at 50
       motorSetSpeed(i);
       //Serial.println(i);
-      delay(80);
+      delay(100);
       // TODO get rid of delay use timer?
     }
   
