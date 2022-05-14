@@ -1,6 +1,6 @@
 /// LIBS
 #include <ESP8266WiFi.h>
-#include <Ticker.h>
+#include <TickTwo.h>
 #include "Arduino.h"
 extern "C"
 {
@@ -56,8 +56,9 @@ byte oldFrame = 0;
 //txrxData[FRAMERATE] = 60;
 //txrxData[MOTORSPEED] = 60;
 void nextSide();
-Ticker frameTimer(nextSide, 200,0, MICROS_MICROS);
-Ticker onTimer(turnOff,200,0, MICROS_MICROS);
+void turnOff();
+TickTwo frameTimer(nextSide, 200,0, MICROS_MICROS);
+TickTwo onTimer(turnOff,200,0, MICROS_MICROS);
 //Ticker 
 int side = 0;
 
@@ -69,10 +70,10 @@ void setup()
 {
   // DEBUG SETUP prints MAC Address from WIFI Stack.  Only necessary to know receiver mac.
   //Serial.begin(115200);
- // Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
-  //WiFi.mode(WIFI_STA);
-  //WiFi.begin();
- // Serial.print("\r\n\r\nDevice MAC: ");
+ //Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin();
+  //Serial.print("\r\n\r\nDevice MAC: ");
   //Serial.println(WiFi.macAddress());
   //  Comment out above dbug and serial for prod code.  slows down everything.
 
@@ -85,7 +86,7 @@ void setup()
   
   // this is a setup of our LED array for FASTLED lib
   LEDS.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(100);
+  //LEDS.setBrightness(100);
   // ideally we would do some power calc and set max current here  TODO
 
   // ESP NOW Setup
@@ -105,9 +106,9 @@ delay(2000);
     memcpy(txrxData, data, len);
    changeFrameInterval ();
 
- // Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
- // Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
- // Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
+  //Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
+  //Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
+  //Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
   //Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
   //Serial.printf("Got Ontime menu =\t%i\n\r", txrxData[ONTIME]);
      

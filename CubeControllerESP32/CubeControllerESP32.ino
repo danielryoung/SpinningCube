@@ -14,7 +14,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <esp_now.h>
-#include <Ticker.h>
+#include <TickTwo.h>
 #include <Servo.h>
 
 // i2c oled display setup
@@ -162,7 +162,7 @@ const int LED_OFF = LOW;
 AceButton button(BUTTON_PIN, LOW, 0);
 
 void handleEvent(AceButton*, uint8_t, uint8_t);
-Ticker rpmTimer(calcMicrosPerTick, MICROS_PER_SAMPLE,0, MICROS_MICROS); // 1 second ==1 mil micros == 1000 millis
+TickTwo rpmTimer(calcMicrosPerTick, MICROS_PER_SAMPLE,0, MICROS_MICROS); // 1 second ==1 mil micros == 1000 millis
 
 void setup() {
   // initialize built-in LED as an output
@@ -197,7 +197,7 @@ void setup() {
 
   // ESP NOW STUFF make a function 
   delay(10);
-  //Serial.begin(115200);
+  Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin();
   //Serial.print("\r\n\r\nDevice MAC: ");
