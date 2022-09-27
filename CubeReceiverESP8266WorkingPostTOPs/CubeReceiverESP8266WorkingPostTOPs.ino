@@ -92,7 +92,7 @@ void setup()
   // ESP NOW Setup
   esp_now_init();
   esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
-delay(2000);
+  delay(2000);
  
  onTimer.interval( (2000 * .95) );
  frameTimer.interval( 2000 ); 
@@ -111,58 +111,33 @@ delay(2000);
   //Serial.printf("Got motorspeed menu =\t%i\n\r", txrxData[MOTORSPEED]);
   //Serial.printf("Got fineframe menu =\t%i\n\r", txrxData[FINEFRAMERATE]);
   //Serial.printf("Got Ontime menu =\t%i\n\r", txrxData[ONTIME]);
-     
-   
-     // need a map here
+
   });
 }
 
-void changeFrameInterval (){
+void changeFrameInterval () {
   
   uint32_t onDurationMicros = ((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,9999));
-  //(txrxData[FRAMERATE] * 100 );
-  //((txrxData[FRAMERATE] * 1000) + map(txrxData[FINEFRAMERATE],0,254,0,999));
   //take our rough frame and change milli to micro times 1000
   //then take our fine frame rate and add a fractional millisecond up to 999
-  //Serial.print("onfor: ");
-  //Serial.println(onDurationMicros);
-   //Serial.print("onfor: ");
-  //Serial.println(onDurationMicros);
+  
   uint32_t turnOffAfter = map(txrxData[ONTIME],0,254,0,(onDurationMicros +1 /20) );
-  //Serial.print("offafter: ");
-  //Serial.println(turnOffAfter);
-  //(onDurationMicros - txrxData[ONTIME]) ;
-  //map(txrxData[ONTIME],0,255,onDurationMicros,1);
 
-      // this sets the time the frame will be on. 
-      //for now a menu choice, but should be done with math
+  // this sets the time the frame will be on. 
+  //for now a menu choice, but should be done with math
   onTimer.interval( turnOffAfter );
-       //Serial.printf("Change Frame Interval");  
-   frameTimer.interval(onDurationMicros);
+  frameTimer.interval(onDurationMicros);
 }
 
 //  esp now will receive bytes without doing anything in loop.
-void loop()
-{
+void loop() {
   frameTimer.update();
   onTimer.update();
-
-  // updates timer
-  //  timer1.update();
-  //changeFrameInterval();
   
-  //ledPattern();
   // we are always mapping cube to leds
   // but we periodically call next side at the framerate
-  if (cubeIsOn){
-   //if (txrxData[MOTORSPEED] <= 70){
-     //   if
-       // pacifica_loop(); // run pacifica at ms designated below
-       // frameTimer.interval(15000);// if motor is stopped (STOPPED) = 45 Change to pacific frame rate
-       // onTimer.interval(14999);// basically on the whole time
-      //} else {
-      //  ledPattern(); // this is basically assigning colors to leds, it could be any pattern
-     // }
+  if (cubeIsOn) {
+
         switch (txrxData[MOTORSPEED]){
         
           case 1 ... 40:
@@ -178,116 +153,66 @@ void loop()
             LEDS.setBrightness(80);
             pacifica_loop();
             break;
-          default:
-          ledPattern();
+            default:
+            ledPattern();
         }
  } else {
- // turnOff();
+
  }
 
- //if (debugIsOn){
-  
- //cube[1] = CHSV(map(txrx, 255, 255);
- //}
  FastLED.show(); 
  stripToCubeMap();
- //change pattern every ten sec.  for now pattern is just HUE
- //EVERY_N_SECONDS(10){txrxData[PATTERN]++;}
- //setSide();
- //FastLED.show();
-
-
- // this should change frameduration with the incoming framerate from controller
-// EVERY_N_MILLISECONDS_I(thisTimer,100){
- // uint8_t timeval = txrxData[FRAMERATE];
-  //thisTimer.setPeriod(timeval);
-  //nextSide();
-  //}
-  //Serial.print ("speed should be ");
- // Serial.println(txrxData[1]);
 }
 
-void ledPattern()
-{
+void ledPattern() {
   static uint8_t globalHue = txrxData[PATTERN];
   // static means the value will be maintained outside the function!
   
-//    for (int i = (NUM_LEDS)-1; i >= 0; i--)
- // {
-    // Set the i'th led to red
-   // leds[i] = CHSV(100, 255, 255);
-   // cube[6] = CHSV(hue++,255,255);
-   // fill_solid(cube,6,CHSV(txrxData[PATTERN],255,255));
    // this just fills our cube with four increasing colors
    // in theory this will shift around with the frame rate.
    setSide(0,txrxData[PATTERN]);
    setSide(1,txrxData[PATTERN] + 50);
    setSide(2,txrxData[PATTERN] + 100);
    setSide(3,txrxData[PATTERN] + 150);
-   // leds[i] = cube[1];
-    // Show the leds
-    //FastLED.show();
-
-    // now that we've shown the leds, reset the i'th led to black
-    // leds[i] = CRGB::Black;
-    //fadeall();
-    // Wait a little bit before we loop around and do it again
-    //delay(10);
- // }
 }
 
-void setSide(int side, int hue){
+void setSide(int side, int hue) {
 
   side = side % 4;
-  //fadeall();
-  for (int i = 0 + (side * L_P_SIDE); i < (L_P_SIDE + (side * L_P_SIDE)); i++)
-  {
+  for (int i = 0 + (side * L_P_SIDE); i < (L_P_SIDE + (side * L_P_SIDE)); i++) {
     cube[i] = CHSV(hue,255,255);
   }
-//Serial.printf("SettheSide");
 }
 
-void fadeall()
-{
-  for (int i = 0; i < NUM_LEDS; i++)
-  {
+void fadeall() {
+  for (int i = 0; i < NUM_LEDS; i++) {
     cube[i].nscale8(250);
   }
 }
 
-void stripToCubeMap(){
-  for (int i = 0; i < NUM_LEDS; i++)
-  {
+void stripToCubeMap() {
+  for (int i = 0; i < NUM_LEDS; i++) {
      //remap each led from cube position to correct strip position
-     
     int n = (i + L_P_SIDE * side)%NUM_LEDS;
     leds[n] = cube[i];
-   // Serial.print("N: ");
-   //Serial.println(n);
-    //Serial.print("I: ");
-    //Serial.println(i);
-    //Serial.print("Side: ");
-    //Serial.println(side);
   }
   
 }
 
-
-void nextSide(){
+void nextSide() {
   side++;
-  if (side == 4) {side = 0;}
-  //Serial.printf("next Side");
-  //if(txrxData[FRAMERATE] <= 220){fill_solid( leds, NUM_LEDS, CRGB(50,0,200));}
+  if (side == 4) {
+    side = 0;
+  }
   onTimer.start(); 
   cubeIsOn = true;
 }
 
 
-void turnOff(){
+void turnOff() {
   fill_solid( leds, NUM_LEDS, CRGB(0,0,0));
   cubeIsOn = false;
   FastLED.show();
-  //Serial.printf("TurnOff Fired =\t%i\n\r", txrxData[ONTIME]);
 }
 
 
