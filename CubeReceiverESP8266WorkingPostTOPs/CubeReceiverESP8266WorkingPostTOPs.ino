@@ -70,7 +70,7 @@ void setup()
 {
   // DEBUG SETUP prints MAC Address from WIFI Stack.  Only necessary to know receiver mac.
   //Serial.begin(115200);
- //Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
+  //Serial.println("\r\nESP_Now MASTER CONTROLLER\r\n");
   WiFi.mode(WIFI_STA);
   WiFi.begin();
   //Serial.print("\r\n\r\nDevice MAC: ");
@@ -94,8 +94,8 @@ void setup()
   esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
   delay(2000);
  
- onTimer.interval( (2000 * .95) );
- frameTimer.interval( 2000 ); 
+  onTimer.interval( (2000 * .95) );
+  frameTimer.interval( 2000 ); 
   frameTimer.start();
   onTimer.start();
 
@@ -103,8 +103,8 @@ void setup()
   //  TODO is to make this a explicit function instead of an anonymous one in the declaration.
   esp_now_register_recv_cb([](uint8_t *mac, uint8_t *data, uint8_t len) {
   
-    memcpy(txrxData, data, len);
-   changeFrameInterval ();
+  memcpy(txrxData, data, len);
+  changeFrameInterval ();
 
   //Serial.printf("Got hue menu =\t%i\n\r", txrxData[PATTERN]);
   //Serial.printf("Got frame menu =\t%i\n\r", txrxData[FRAMERATE]);
