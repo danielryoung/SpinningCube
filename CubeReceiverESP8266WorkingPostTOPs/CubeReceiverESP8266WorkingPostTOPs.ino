@@ -155,13 +155,32 @@ void loop()
   // we are always mapping cube to leds
   // but we periodically call next side at the framerate
   if (cubeIsOn){
-   if (txrxData[MOTORSPEED] <= 70){
-        pacifica_loop(); // run pacifica at ms designated below
-        frameTimer.interval(15000);// if motor is stopped (STOPPED) = 45 Change to pacific frame rate
-        onTimer.interval(14999);// basically on the whole time
-      } else {
-        ledPattern(); // this is basically assigning colors to leds, it could be any pattern
-      }
+   //if (txrxData[MOTORSPEED] <= 70){
+     //   if
+       // pacifica_loop(); // run pacifica at ms designated below
+       // frameTimer.interval(15000);// if motor is stopped (STOPPED) = 45 Change to pacific frame rate
+       // onTimer.interval(14999);// basically on the whole time
+      //} else {
+      //  ledPattern(); // this is basically assigning colors to leds, it could be any pattern
+     // }
+        switch (txrxData[MOTORSPEED]){
+        
+          case 1 ... 40:
+            LEDS.setBrightness(0);
+            break;
+          case 41 ...50:
+            LEDS.setBrightness(50);
+            pacifica_loop();
+            break;
+          case 51 ... 60:
+            frameTimer.interval(15000);
+            onTimer.interval(14999);
+            LEDS.setBrightness(80);
+            pacifica_loop();
+            break;
+          default:
+          ledPattern();
+        }
  } else {
  // turnOff();
  }
