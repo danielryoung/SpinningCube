@@ -2,19 +2,16 @@
 #include <ESP8266WiFi.h>
 #include <TickTwo.h>
 #include "Arduino.h"
-extern "C"
-{
-#include <espnow.h>
-#include "user_interface.h"
+extern "C" {
+  #include <espnow.h>
+  #include "user_interface.h"
 }
-
 #include <FastLED.h>
 #include <SPI.h>
 
-//#include <stdint.h>
-/// GLOBALS
+// GLOBALS
 
-//  We are using APA102 Strips, 4 strips of 6 on each side of the cube
+// We are using APA102 Strips, 4 strips of 12 on each side of the cube
 // SPI Pins designated here for DATA_PIN and CLOCK_PIN
 #define DATA_PIN D7
 #define CLOCK_PIN D5
@@ -41,20 +38,12 @@ CRGB cube[NUM_LEDS];
 // This the ESP NOW Data that will be transmitted.
 // this is length of data sent in byte array txrxData.  this can be up to 100ish bytes
 
-
 uint8_t txrxData[MENU_ITEMS];
 bool frameRateChange = 1;
 
 // initiate a tracker to only change frame rate when we get a new value
 byte oldFrame = 0;
 
-//void printMessage();
-
-//Ticker timer1(printMessage, 5000,0, MICROS_MICROS);
-
-//txrxData[0] = 1;
-//txrxData[FRAMERATE] = 60;
-//txrxData[MOTORSPEED] = 60;
 void nextSide();
 void turnOff();
 TickTwo frameTimer(nextSide, 200,0, MICROS_MICROS);
@@ -140,17 +129,21 @@ void loop() {
 
         switch (txrxData[MOTORSPEED]){
         
-          case 1 ... 40:
+          case 1 ... 50:
             LEDS.setBrightness(0);
-            break;
-          case 41 ...50:
-            LEDS.setBrightness(50);
-            pacifica_loop();
-            break;
-          case 51 ... 60:
             frameTimer.interval(15000);
             onTimer.interval(14999);
-            LEDS.setBrightness(80);
+            break;
+          case 51 ...60:
+            LEDS.setBrightness(30);
+            frameTimer.interval(15000);
+            onTimer.interval(14999);
+            pacifica_loop();
+            break;
+          case 61 ... 70:
+            frameTimer.interval(15000);
+            onTimer.interval(14999);
+            LEDS.setBrightness(245);
             pacifica_loop();
             break;
             default:
@@ -166,7 +159,7 @@ void loop() {
 
 void ledPattern() {
   static uint8_t globalHue = txrxData[PATTERN];
-  // static means the value will be maintained outside the function!
+   // static means the value will be maintained outside the function!
   
    // this just fills our cube with four increasing colors
    // in theory this will shift around with the frame rate.
