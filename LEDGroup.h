@@ -3,16 +3,27 @@
 
 #include <FastLED.h>
 
+#ifdef ESP32
+#include <esp_timer.h>
+// ESP32 has 4 hardware timers available
+#endif
+
 // Frame buffer size for smooth animations
 #define FRAME_BUFFER_SIZE 4
 
 /**
  * LEDGroup - Manages a group of LEDs with virtual buffering and timing control
  *
+ * ESP32 HARDWARE TIMER SUPPORT:
+ * - Automatically uses hardware timers on ESP32 when enabled
+ * - 4 timers available (can support 4 independent groups)
+ * - Microsecond precision with minimal CPU overhead
+ * - Falls back to software timing if hardware timers unavailable
+ *
  * This class allows you to:
  * - Map virtual LED arrays to physical LED strips
  * - Buffer multiple frames for smooth animations
- * - Control display timing with square wave patterns
+ * - Control display timing with hardware or software square waves
  * - Apply custom effects to LED groups
  * - Manage multiple independent LED groups
  */
@@ -28,7 +39,7 @@ public:
     LEDGroup(CRGB* physicalArray, uint16_t physicalArraySize, uint8_t group, uint16_t virtualSectionSize);
 
     /**
-     * Destructor - cleans up allocated memory
+     * Destructor - cleans up allocated memory and timers
      */
     ~LEDGroup();
 
@@ -45,14 +56,14 @@ public:
     void renderCurrentFrame();
 
     /**
-     * Updates the square wave timing state
-     * Call this frequently (e.g., in loop())
+     * Updates the square wave timing state (software mode)
+     * Call this frequently (e.g., in loop()) if not using hardware timer
      */
     void updateSquareWave();
 
     /**
      * Processes state changes and manages frame transitions
-     * Call this after updateSquareWave()
+     * Call this after updateSquareWave() or use with hardware timer
      */
     void processStateChanges();
 
@@ -66,6 +77,38 @@ public:
      * Generates the next frame using the effect function
      */
     void generateNextFrame();
+
+    // Hardware timer control (ESP32 only)
+#ifdef ESP32
+    /**
+     * Enable hardware timer for this group
+     * @param timerNumber Timer to use (0-3 for ESP32)
+     * @return true if successful, false if timer unavailable
+     */
+    bool enableHardwareTimer(uint8_t timerNumber);
+
+    /**
+     * Start the hardware timer
+     * Must call enableHardwareTimer() first
+     */
+    void startHardwareTimer();
+
+    /**
+     * Stop the hardware timer
+     */
+    void stopHardwareTimer();
+
+    /**
+     * Check if hardware timer is enabled
+     */
+    bool isHardwareTimerEnabled();
+
+    /**
+     * Hardware timer ISR callback (internal use)
+     * This is called automatically by the timer
+     */
+    void timerCallback();
+#endif
 
     // Ring buffer management
     void advanceReadIndex();
@@ -165,13 +208,23 @@ private:
     uint8_t bufferedFrames;
 
     // Square wave timing
-    unsigned long onDuration;
-    unsigned long offDuration;
-    bool squareWaveState;
+    volatile unsigned long onDuration;
+    volatile unsigned long offDuration;
+    volatile bool squareWaveState;
     unsigned long lastSquareWaveUpdate;
 
     // Effect function pointer
     void (*effectFunction)(CRGB*, uint16_t, uint8_t);
+
+#ifdef ESP32
+    // Hardware timer support (ESP32)
+    hw_timer_t* hwTimer;
+    uint8_t timerNum;
+    bool hardwareTimerEnabled;
+    volatile bool timingUpdatePending;
+    volatile unsigned long newOnDuration;
+    volatile unsigned long newOffDuration;
+#endif
 };
 
 #endif // LEDGROUP_H
